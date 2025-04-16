@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import type { Student } from "@/types/student"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
+  const [regsiterNumber, setRegisterNumber] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -21,7 +21,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!email || !password) {
+    if (!regsiterNumber || !password) {
       toast.error("Please enter both email and password")
       return
     }
@@ -30,7 +30,7 @@ export default function LoginPage() {
       setLoading(true)
 
       // Query the students table to find a matching email and password
-      const { data, error } = await supabase.from("students").select("*").eq("email", email).single()
+      const { data, error } = await supabase.from("students").select("*").eq("register_number", regsiterNumber).single()
 
       if (error) {
         throw error
@@ -73,11 +73,11 @@ export default function LoginPage() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="your.email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="register_number"
+                type="register_number"
+                placeholder="Your register number"
+                value={regsiterNumber}
+                onChange={(e) => setRegisterNumber(e.target.value)}
                 required
               />
             </div>
