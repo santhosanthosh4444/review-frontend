@@ -69,7 +69,7 @@ export default function TeamsPage() {
           {
             team_lead: student.student_id,
             code,
-            is_approved: false,
+            is_approved: null,
           },
         ])
         .select()
