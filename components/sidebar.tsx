@@ -1,5 +1,5 @@
 "use client"
-import { LucideHome, LucideClipboardCheck, LucideFileText } from "lucide-react"
+import { LucideHome, LucideClipboardCheck, LucideFileText, LucideCalendarClock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
@@ -21,6 +21,11 @@ export function Sidebar({ onNavigate, activeView, hasApprovedProject }: SidebarP
       name: "Project",
       icon: LucideFileText,
       id: "project",
+    },
+    {
+      name: "Logs",
+      icon: LucideCalendarClock,
+      id: "logs",
     },
   ]
 

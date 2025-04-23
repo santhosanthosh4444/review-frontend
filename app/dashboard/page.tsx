@@ -9,7 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Sidebar } from "@/components/sidebar"
 import { Review } from "@/components/review"
+import { Logs } from "@/components/logs"
 import { ProjectManagement } from "@/components/project-management"
+import { WorkLogModal } from "@/components/work-log-modal"
 import type { Student } from "@/types/student"
 
 interface Team {
@@ -43,6 +45,7 @@ export default function Dashboard() {
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeView, setActiveView] = useState("dashboard")
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -136,9 +139,12 @@ export default function Dashboard() {
 
   const renderDashboardContent = () => (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">View your profile and team information</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">View your profile and team information</p>
+        </div>
+        <Button onClick={() => setIsLogModalOpen(true)}>Log Work</Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -245,9 +251,12 @@ export default function Dashboard() {
 
   const renderProjectContent = () => (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Project</h1>
-        <p className="text-muted-foreground">Manage your project details</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Project</h1>
+          <p className="text-muted-foreground">Manage your project details</p>
+        </div>
+        <Button onClick={() => setIsLogModalOpen(true)}>Log Work</Button>
       </div>
       {team && <ProjectManagement teamId={team.team_id} isTeamLead={!!isTeamLead} />}
     </div>
@@ -259,6 +268,8 @@ export default function Dashboard() {
         return renderDashboardContent()
       case "project":
         return renderProjectContent()
+      case "logs":
+        return <Logs />
       case "review":
         return <Review />
       default:
@@ -270,6 +281,9 @@ export default function Dashboard() {
     <div className="flex h-screen">
       <Sidebar onNavigate={handleNavigate} activeView={activeView} hasApprovedProject={!!hasApprovedProject} />
       <div className="flex-1 p-8 overflow-auto">{renderContent()}</div>
+
+      {/* Work Log Modal */}
+      <WorkLogModal isOpen={isLogModalOpen} onClose={() => setIsLogModalOpen(false)} />
     </div>
   )
 }
