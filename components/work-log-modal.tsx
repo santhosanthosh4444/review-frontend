@@ -85,6 +85,7 @@ export function WorkLogModal({ isOpen, onClose, onSuccess, editLog }: WorkLogMod
             expected_task: expectedTask,
             completed_task: completedTask,
             mentor_approved: null,
+            team_id: student.team_id,
           },
         ])
 
