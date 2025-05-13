@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast"
 import { supabase } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Loader2, Paperclip, ExternalLink, Trash2, CheckCircle, XCircle } from "lucide-react"
+import { Loader2, Paperclip, ExternalLink, Trash2, CheckCircle, XCircle, FileText } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { FileUpload } from "@/components/file-upload"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
@@ -29,18 +29,32 @@ interface Attachment {
   link: string
 }
 
+interface Template {
+  id: number
+  created_at: string
+  link: string | null
+  name: string | null
+  review: string | null
+}
+
 export function Review() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [attachments, setAttachments] = useState<Record<number, Attachment[]>>({})
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
+  const [templatesLoading, setTemplatesLoading] = useState(false)
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false)
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [currentReviewId, setCurrentReviewId] = useState<number | null>(null)
+  const [currentReviewStage, setCurrentReviewStage] = useState<string | null>(null)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [attachmentToDelete, setAttachmentToDelete] = useState<Attachment | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchTeamReviews()
+    fetchAllTemplates()
   }, [])
 
   const fetchTeamReviews = async () => {
@@ -84,6 +98,25 @@ export function Review() {
     }
   }
 
+  const fetchAllTemplates = async () => {
+    try {
+      // Fetch all templates from the review_templates table
+      const { data, error } = await supabase
+        .from("review_templates")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        throw error
+      }
+
+      setTemplates(data || [])
+    } catch (error) {
+      console.error("Error fetching templates:", error)
+      toast.error("Failed to load templates")
+    }
+  }
+
   const fetchAttachments = async (reviewIds: number[]) => {
     try {
       const { data, error } = await supabase
@@ -115,6 +148,22 @@ export function Review() {
   const handleAddAttachment = (reviewId: number) => {
     setCurrentReviewId(reviewId)
     setIsAttachmentModalOpen(true)
+  }
+
+  const handleViewTemplates = (reviewId: number, stage: string | null) => {
+    setCurrentReviewId(reviewId)
+    setCurrentReviewStage(stage)
+
+    // Filter templates for this review stage
+    setTemplatesLoading(true)
+    const filtered = templates.filter(
+      (template) =>
+        !template.review || template.review === stage || template.review.toLowerCase() === stage?.toLowerCase(),
+    )
+    setFilteredTemplates(filtered)
+    setTemplatesLoading(false)
+
+    setIsTemplateModalOpen(true)
   }
 
   const handleAttachmentUploadComplete = async (name: string, url: string) => {
@@ -239,21 +288,32 @@ export function Review() {
                     </div>
                   </div>
 
+                  {/* Buttons section */}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewTemplates(review.id, review.stage)}
+                      className="text-xs"
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      View Templates
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddAttachment(review.id)}
+                      className="text-xs"
+                    >
+                      <Paperclip className="h-3 w-3 mr-1" />
+                      Add Attachment
+                    </Button>
+                  </div>
+
                   {/* Attachments section */}
                   <div className="mt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="text-sm font-medium">Attachments</h4>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddAttachment(review.id)}
-                        className="text-xs"
-                      >
-                        <Paperclip className="h-3 w-3 mr-1" />
-                        Add
-                      </Button>
-                    </div>
-
+                    <h4 className="text-sm font-medium mb-2">Attachments</h4>
                     {attachments[review.id]?.length > 0 ? (
                       <div className="space-y-2">
                         {attachments[review.id].map((attachment) => (
@@ -333,6 +393,55 @@ export function Review() {
           onUploadComplete={handleAttachmentUploadComplete}
           onCancel={() => setIsAttachmentModalOpen(false)}
         />
+      </Modal>
+
+      {/* Templates Modal */}
+      <Modal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        title={`Templates for ${currentReviewStage || "Review"}`}
+      >
+        <div className="py-4">
+          {templatesLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : filteredTemplates.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No templates available for this review</div>
+          ) : (
+            <div className="space-y-4">
+              {filteredTemplates.map((template) => (
+                <div key={template.id} className="border rounded-md p-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <FileText className="h-5 w-5 text-gray-400 mr-3" />
+                      <div>
+                        <h3 className="font-medium">{template.name || "Unnamed Template"}</h3>
+                        {template.review && <p className="text-xs text-gray-500 mt-1">For: {template.review}</p>}
+                      </div>
+                    </div>
+                    {template.link && (
+                      <a
+                        href={template.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        <span className="mr-1">Open</span>
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="mt-6 flex justify-end">
+            <Button variant="outline" onClick={() => setIsTemplateModalOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Delete Confirmation Modal */}

@@ -22,12 +22,20 @@ interface Team {
   is_approved: boolean
   code: string
   created_at: string
+  mentor: string | null
 }
 
 interface Project {
   id: number
   title: string | null
   is_approved: boolean | null
+}
+
+interface Mentor {
+  staff_id: string
+  name: string | null
+  email: string | null
+  department: string | null
 }
 
 // Theme badge colors
@@ -43,6 +51,7 @@ export default function Dashboard() {
   const [team, setTeam] = useState<Team | null>(null)
   const [teamMembers, setTeamMembers] = useState<Student[]>([])
   const [project, setProject] = useState<Project | null>(null)
+  const [mentor, setMentor] = useState<Mentor | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeView, setActiveView] = useState("dashboard")
   const [isLogModalOpen, setIsLogModalOpen] = useState(false)
@@ -87,6 +96,22 @@ export default function Dashboard() {
       }
 
       setTeam(teamData)
+
+      // Fetch mentor details if available
+      if (teamData.mentor) {
+        const { data: mentorData, error: mentorError } = await supabase
+          .from("staffs")
+          .select("staff_id, name, email, department")
+          .eq("staff_id", teamData.mentor)
+          .single()
+
+        if (mentorError) {
+          console.error("Error fetching mentor data:", mentorError)
+          // Don't throw here, just log the error and continue
+        } else {
+          setMentor(mentorData)
+        }
+      }
 
       // Fetch team members
       const { data: membersData, error: membersError } = await supabase
@@ -209,6 +234,18 @@ export default function Dashboard() {
                     <p className={`text-sm ${team.is_approved ? "text-green-500" : "text-amber-500"}`}>
                       {team.is_approved ? "Approved" : "Pending Approval"}
                     </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Mentor</p>
+                    {mentor ? (
+                      <div className="mt-1">
+                        <p className="text-sm font-medium">{mentor.name || "Unnamed"}</p>
+                        <p className="text-xs text-gray-500">{mentor.email}</p>
+                        {mentor.department && <p className="text-xs text-gray-500">Department: {mentor.department}</p>}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">Not assigned yet</p>
+                    )}
                   </div>
                 </div>
 
