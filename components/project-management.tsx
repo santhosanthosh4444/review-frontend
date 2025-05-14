@@ -38,6 +38,7 @@ export function ProjectManagement({ teamId, isTeamLead }: ProjectManagementProps
   const [description, setDescription] = useState("")
   const [selectedTheme, setSelectedTheme] = useState<string>("")
   const [submitting, setSubmitting] = useState(false)
+  const [titleError, setTitleError] = useState<string | null>(null)
 
   const themes = ["Web Development", "Mobile App", "AI/ML", "Blockchain", "IoT", "Cybersecurity", "Data Science"]
 
@@ -71,8 +72,32 @@ export function ProjectManagement({ teamId, isTeamLead }: ProjectManagementProps
     }
   }
 
+  // Check if project title already exists
+  const checkTitleExists = async (projectTitle: string): Promise<boolean> => {
+    try {
+      let query = supabase.from("projects").select("id").eq("title", projectTitle)
+
+      // If we're editing an existing project, exclude it from the check
+      if (project) {
+        query = query.neq("id", project.id)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        throw error
+      }
+
+      return data && data.length > 0
+    } catch (error) {
+      console.error("Error checking title uniqueness:", error)
+      return false // Default to allowing submission if check fails
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setTitleError(null)
 
     if (!title.trim()) {
       toast.error("Please enter a project title")
@@ -91,6 +116,15 @@ export function ProjectManagement({ teamId, isTeamLead }: ProjectManagementProps
 
     try {
       setSubmitting(true)
+
+      // Check if title already exists
+      const titleExists = await checkTitleExists(title.trim())
+      if (titleExists) {
+        setTitleError("This project title is already taken. Please choose a different title.")
+        toast.error("Project title already exists")
+        setSubmitting(false)
+        return
+      }
 
       if (project) {
         // Update existing project
@@ -176,10 +210,15 @@ export function ProjectManagement({ teamId, isTeamLead }: ProjectManagementProps
               <Input
                 id="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setTitle(e.target.value)
+                  setTitleError(null) // Clear error when title changes
+                }}
                 placeholder="Enter project title"
                 required
+                className={titleError ? "border-red-500" : ""}
               />
+              {titleError && <p className="text-sm text-red-500 mt-1">{titleError}</p>}
             </div>
 
             <div className="space-y-2">
